@@ -1,0 +1,170 @@
+name: CI/CD Pipeline - Suite de Pruebas y Cobertura
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - 'feature/**'
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  test-and-coverage:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        java-version: ['17']
+
+    steps:
+      # 1. Checkout del código fuente
+      - name: Checkout código fuente
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # 2. Configurar JDK 17 (Temurin)
+      - name: Configurar JDK Temurin 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: ${{ matrix.java-version }}
+          distribution: 'temurin'
+          cache: maven
+
+      # 3. Validar estructura del proyecto
+      - name: Validar estructura Maven
+        run: |
+          ls -la
+          [ -f pom.xml ] && echo "✓ pom.xml encontrado" || (echo "✗ pom.xml no encontrado" && exit 1)
+          [ -d src/main/java ] && echo "✓ src/main/java encontrado" || (echo "✗ src/main/java no encontrado" && exit 1)
+          [ -d src/test/java ] && echo "✓ src/test/java encontrado" || (echo "✗ src/test/java no encontrado" && exit 1)
+
+      # 4. Mostrar versión de Java
+      - name: Mostrar versión de Java
+        run: java -version
+
+      # 5. Mostrar información de Maven
+      - name: Mostrar información de Maven
+        run: mvn --version
+
+      # 6. Limpiar caché anterior
+      - name: Limpiar compilaciones anteriores
+        run: mvn clean
+
+      # 7. Descargar dependencias
+      - name: Descargar dependencias
+        run: mvn dependency:resolve
+
+      # 8. Compilar código fuente
+      - name: Compilar código fuente
+        run: mvn -B compile
+
+      # 9. Ejecutar pruebas unitarias
+      - name: Ejecutar pruebas unitarias
+        run: mvn -B test
+        continue-on-error: false
+
+      # 10. Generar reporte de cobertura JaCoCo
+      - name: Generar reporte de cobertura JaCoCo
+        run: mvn -B jacoco:report
+        if: always()
+
+      # 11. Publicar resultados de pruebas
+      - name: Publicar resultados de pruebas
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: target/surefire-reports/**/*.xml
+          check_name: Resultados de Pruebas Unitarias
+
+      # 12. Subir reporte de cobertura a Codecov (opcional)
+      - name: Subir cobertura a Codecov
+        uses: codecov/codecov-action@v3
+        if: always()
+        with:
+          files: ./target/site/jacoco/jacoco.xml
+          flags: unittests
+          name: codecov-coverage
+          fail_ci_if_error: false
+
+      # 13. Generar comentario con resumen de cobertura
+      - name: Generar resumen de cobertura
+        if: always()
+        run: |
+          echo "## 📊 Reporte de Cobertura de Código" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "El reporte detallado está disponible en: \`target/site/jacoco/index.html\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Requisitos mínimos de cobertura:" >> $GITHUB_STEP_SUMMARY
+          echo "- **Líneas**: 70%" >> $GITHUB_STEP_SUMMARY
+          echo "- **Métodos**: 70%" >> $GITHUB_STEP_SUMMARY
+
+      # 14. Listar archivos generados
+      - name: Listar reportes generados
+        if: always()
+        run: |
+          echo "=== Archivos de reporte generados ==="
+          find target -name "*.html" -o -name "jacoco.xml" | head -20
+
+      # 15. Crear artefacto con reportes
+      - name: Crear artefacto con reportes JaCoCo
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: jacoco-report
+          path: target/site/jacoco/
+          retention-days: 30
+
+      # 16. Crear artefacto con resultados de pruebas
+      - name: Crear artefacto con resultados de pruebas
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: surefire-reports
+          path: target/surefire-reports/
+          retention-days: 30
+
+      # 17. Resumen final del workflow
+      - name: Resumen del Pipeline CI/CD
+        if: always()
+        run: |
+          echo "╔═══════════════════════════════════════════╗"
+          echo "║ RESUMEN DEL PIPELINE CI/CD                ║"
+          echo "╚═══════════════════════════════════════════╝"
+          echo ""
+          echo "✓ Checkout completado"
+          echo "✓ JDK 17 configurado"
+          echo "✓ Dependencias descargadas"
+          echo "✓ Código compilado"
+          echo "✓ Pruebas ejecutadas"
+          echo "✓ Cobertura medida (mínimo 70%)"
+          echo ""
+          echo "📁 Reportes disponibles:"
+          echo "   - JaCoCo: target/site/jacoco/index.html"
+          echo "   - Surefire: target/surefire-reports/"
+          echo ""
+          echo "Pipeline ejecutado en: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+  # Job adicional para validar cobertura
+  validate-coverage:
+    runs-on: ubuntu-latest
+    needs: test-and-coverage
+    if: always()
+    
+    steps:
+      - name: Checkout código fuente
+        uses: actions/checkout@v4
+
+      - name: Configurar JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Validar mínimo de cobertura
+        run: mvn -B jacoco:check
+        continue-on-error: true

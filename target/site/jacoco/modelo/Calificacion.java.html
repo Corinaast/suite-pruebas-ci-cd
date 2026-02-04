@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="es"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Calificacion.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">sistema-gestion-academica</a> &gt; <a href="index.source.html" class="el_package">modelo</a> &gt; <span class="el_source">Calificacion.java</span></div><h1>Calificacion.java</h1><pre class="source lang-java linenums">package modelo;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
+public class Calificacion {
+    private String codigoCurso;
+    private String nombreCurso;
+    private int creditos;
+    private double nota;
+    private String periodo;
+    private String estado;
+    private LocalDateTime fecha;
+
+<span class="nc" id="L15">    public enum Estado {</span>
+<span class="nc" id="L16">        APROBADO, REPROBADO</span>
+    }
+
+    public Calificacion(String codigoCurso, String nombreCurso, int creditos, 
+<span class="fc" id="L20">                       double nota, String periodo) {</span>
+<span class="fc" id="L21">        this.codigoCurso = codigoCurso;</span>
+<span class="fc" id="L22">        this.nombreCurso = nombreCurso;</span>
+<span class="fc" id="L23">        this.creditos = creditos;</span>
+<span class="fc" id="L24">        this.nota = nota;</span>
+<span class="fc" id="L25">        this.periodo = periodo;</span>
+<span class="fc bfc" id="L26" title="All 2 branches covered.">        this.estado = nota &gt;= 7.0 ? &quot;APROBADO&quot; : &quot;REPROBADO&quot;;</span>
+<span class="fc" id="L27">        this.fecha = LocalDateTime.now();</span>
+<span class="fc" id="L28">    }</span>
+
+    public double getNotaPonderada() {
+<span class="fc" id="L31">        return nota * creditos;</span>
+    }
+
+    public String obtenerEstado() {
+<span class="fc" id="L35">        return estado;</span>
+    }
+
+    public String getCodigoCurso() {
+<span class="fc" id="L39">        return codigoCurso;</span>
+    }
+
+    public String getNombreCurso() {
+<span class="fc" id="L43">        return nombreCurso;</span>
+    }
+
+    public int getCreditos() {
+<span class="fc" id="L47">        return creditos;</span>
+    }
+
+    public double getNota() {
+<span class="fc" id="L51">        return nota;</span>
+    }
+
+    public String getPeriodo() {
+<span class="fc" id="L55">        return periodo;</span>
+    }
+
+    public String getEstado() {
+<span class="fc" id="L59">        return estado;</span>
+    }
+
+    public String getFechaFormato() {
+<span class="fc" id="L63">        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(&quot;dd/MM/yyyy HH:mm&quot;);</span>
+<span class="fc" id="L64">        return fecha.format(formatter);</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="fc" id="L69">        return codigoCurso + &quot; - &quot; + nombreCurso + &quot; (&quot; + nota + &quot;)&quot;;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>
